@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <pthread.h>
+
+#define ARRAY_SIZE 1000
+#define THREADS_COUNT 5
+#define SEARCH_NUMBER 23
+#define SEARCH_RANGE 200
+
+int array[ARRAY_SIZE];
+int found_thread = 0;
+
+void *searchThread(void *thread_id) {
+    int id = *((int*) thread_id);
+    int start = id * SEARCH_RANGE;
+    int end = start + SEARCH_RANGE;
+
+    for (int i = start; i < end; i++) {
+        if (array[i] == SEARCH_NUMBER) {
+            found_thread = id + 1;
+            printf("Número %d encontrado na posição %d pelo thread %d\n", SEARCH_NUMBER, i, id + 1);
+            pthread_exit((void*) &found_thread);
+        }
+    }
+
+    int *not_found = 0;
+    pthread_exit((void*) not_found);
+}
+
+int main() {
+    pthread_t threads[THREADS_COUNT];
+    int thread_ids[THREADS_COUNT];
+
+    for (int i = 0; i < ARRAY_SIZE; i++) {
+        array[i] = i;
+    }
+
+    for (int i = 0; i < THREADS_COUNT; i++) {
+        thread_ids[i] = i;
+        pthread_create(&threads[i], NULL, searchThread, (void*) &thread_ids[i]);
+    }
+
+    for (int i = 0; i < THREADS_COUNT; i++) {
+        int *thread_result;
+        pthread_join(threads[i], (void**) &thread_result);
+
+        if (*thread_result != 0) {
+            found_thread = *thread_result;
+        }
+    }
+
+    printf("Número %d encontrado pelo thread %d\n", SEARCH_NUMBER, found_thread);
+
+    return 0;
+}
